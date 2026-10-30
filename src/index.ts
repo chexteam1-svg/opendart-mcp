@@ -738,9 +738,10 @@ function createMcpServer() {
 if (process.argv[2] === "http") {
   const port = parseInt(process.env.PORT ?? "8765", 10);
 
-  // claude.ai 커스텀 커넥터는 고정 헤더를 못 보낸다. 그래서 주소 자체를 비밀번호로 쓴다: /mcp/<토큰>.
-  // 토큰은 MCP_AUTH_TOKEN 이 있으면 그것, 없으면 DART 키에서 만든다 — Render 에는 DART 키 하나만 넣으면 되고,
-  // 키를 가진 쪽(이 PC)에서도 같은 주소를 계산할 수 있다. 토큰이 없으면 아예 뜨지 않는다(무인증 공개 금지).
+  // 인증 세 가지: ① 헤더 X-Api-Key: <토큰> (claude.ai 커스텀 커넥터 "요청 헤더" — 권장, 화면에 다시 안 보임)
+  // ② Authorization: Bearer <토큰> ③ 주소 /mcp/<토큰> (헤더를 못 넣는 곳용 — 주소가 캡처·공유되면 새어 나간다).
+  // 토큰은 MCP_AUTH_TOKEN 이 있으면 그것, 없으면 DART 키에서 만든다. 토큰이 없으면 아예 뜨지 않는다(무인증 공개 금지).
+  // 2026-10-30: 키에서 만든 토큰이 담긴 주소가 캡처로 채팅에 올라가, Render 에 MCP_AUTH_TOKEN 을 따로 넣어 바꿨다.
   const token = process.env.MCP_AUTH_TOKEN
     || createHash("sha256").update(`opendart-mcp:${apiKey()}`).digest("hex").slice(0, 32);
 
@@ -754,7 +755,8 @@ if (process.argv[2] === "http") {
       return;
     }
 
-    const authed = path === `/mcp/${token}` || (path === "/mcp" && req.headers["authorization"] === `Bearer ${token}`);
+    const authed = path === `/mcp/${token}`
+      || (path === "/mcp" && (req.headers["x-api-key"] === token || req.headers["authorization"] === `Bearer ${token}`));
     if (!authed) {
       // 주소가 틀렸는지 토큰이 틀렸는지 구분해 주지 않는다
       res.writeHead(404, { "content-type": "application/json" });
