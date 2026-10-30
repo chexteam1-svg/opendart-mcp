@@ -18,14 +18,18 @@
 |---|---|
 | 저장소 | https://github.com/chexteam1-svg/opendart-mcp (공개, 키 없음). **푸시하면 Render 가 자동 배포** |
 | 호스팅 | Render 무료, 싱가포르, `render.yaml` Blueprint. 서비스 주소 `https://opendart-mcp-37uz.onrender.com` |
-| 키 | Render 환경변수 `DART_API_KEY` (사용자가 Render 화면에서 직접 붙여넣음) |
-| 커넥터 주소 | `https://opendart-mcp-37uz.onrender.com/mcp/<토큰>` — **주소 자체가 비밀번호**. 채팅·문서에 적지 말 것 |
+| 키 | Render 환경변수 `DART_API_KEY`, `MCP_AUTH_TOKEN` (둘 다 사용자가 Render 화면에서 직접 붙여넣음) |
+| claude.ai 커넥터 | 이름 **OpenDART 전자공시**, URL `https://opendart-mcp-37uz.onrender.com/mcp`, 인증 **로그인 없음**, 요청 헤더 `x-api-key: <토큰>` |
 | 상태 확인 | `https://opendart-mcp-37uz.onrender.com/healthz` (인증 없음, 키 값은 안 나옴) |
 
-- 토큰 = `sha256("opendart-mcp:" + DART_API_KEY)` 16진수 앞 32자. Render 환경변수 `MCP_AUTH_TOKEN` 을 넣으면 그 값이 우선한다(주소를 바꾸고 싶을 때).
-  이 PC 에 키가 있으니 같은 주소를 언제든 다시 계산할 수 있다 — Claude 에게 "커넥터 주소 클립보드에 넣어줘" 하면 된다.
-- claude.ai 커넥터는 고정 헤더(Bearer)를 못 보내서 이 방식을 택했다. `Authorization: Bearer <토큰>` 으로 `/mcp` 를 부르는 것도 된다(Claude Code 등).
+- 인증은 세 가지를 받는다: 헤더 `x-api-key`(claude.ai 커넥터 — **권장**, 저장 후 다시 안 보임) · `Authorization: Bearer` · 주소 `/mcp/<토큰>`.
+- **토큰 = `MCP_AUTH_TOKEN`** = `sha256("opendart-mcp:v2:" + DART_API_KEY)` 16진수 앞 32자. 이 PC 키로 다시 계산할 수 있다 —
+  Claude 에게 "OpenDART 토큰 클립보드에 넣어줘" 하면 된다. 값은 채팅·문서·캡처에 남기지 말 것.
+- **2026-10-30 토큰 교체**: 처음엔 `MCP_AUTH_TOKEN` 없이 키에서 만든 토큰(v1)을 **주소 안에** 넣었는데, 커넥터 화면 캡처로 그 주소가 채팅에 올라갔다.
+  claude.ai 가 요청 헤더를 지원하는 걸 확인하고 v2 토큰을 Render `MCP_AUTH_TOKEN` 에 넣어 교체 → v1 주소는 404 로 막힌 것을 확인했다.
+  또 새면: v3 처럼 문자열을 바꿔 새 토큰을 만들고 Render `MCP_AUTH_TOKEN` 과 claude.ai 커넥터 헤더를 함께 바꾼다(헤더 값은 수정이 안 되니 커넥터를 지우고 다시 추가).
 - 토큰이 없거나 틀리면 `404` 만 준다 (주소가 틀렸는지 토큰이 틀렸는지 구분해 주지 않음).
+- 커넥터를 추가할 때 1단계에서 "서버를 확인할 수 없습니다(404)" 가 뜨는 게 정상이다 — 그때는 헤더가 없다. **그래도 계속** 으로 넘어가 헤더를 넣는다.
 - ⚠️ `opendart-mcp.onrender.com`(접미사 없는 주소)은 **다른 사람의 파이썬 서버**다. 응답 머리 `x-render-origin-server: uvicorn` 으로 구분된다.
 - 무료 플랜은 15분 안 쓰면 잠든다 — 그날 첫 호출이 30초~1분 느리다.
 
@@ -78,7 +82,9 @@
 ## 남은 일
 
 1. **로컬 stdio 는 `88.AI Workspace` 폴더에서 연 Claude Code 세션에서만 보인다** (프로젝트 `.mcp.json` 등록). 다른 곳은 원격 커넥터로 쓴다.
-2. ~~claude.ai 웹·휴대폰~~ → 2026-10-30 Render 원격으로 해결. Render 에서 외부 시험 통과(아래). claude.ai 커넥터 등록은 사용자가 화면에서 했는지 확인 필요.
+2. ~~claude.ai 웹·휴대폰~~ → 2026-10-30 Render 원격 + claude.ai 커넥터 등록 완료. **웹 채팅에서 실제 호출 확인**(아래).
+   코워크는 같은 계정 커넥터 목록을 쓰지만 **코워크 안에서 직접 호출해 보지는 않았다** — 처음 쓸 때 확인할 것.
+4. 도구 권한은 8개 모두 기본값 **승인 필요** 그대로다. 매번 묻는 게 번거로우면 커넥터 화면 "읽기 전용 도구" 를 **항상 허용** 으로 (모두 읽기 전용).
 3. ~~git 저장소 아님~~ → 2026-10-30 GitHub 공개 저장소로 올림.
 
 ## 원격 검증 기록 (2026-10-30, Render)
@@ -87,3 +93,6 @@
 - 토큰 없이 `/mcp`·틀린 토큰 → 404 / 맞는 주소 → initialize 200, 도구 8개
 - 교촌에프앤비 2025 매출 5,173.5억 (첫 호출 11.8초 — 회사 목록 13MB 받는 시간)
 - BBQ 감사보고서 원문 영업이익 53,138,352,982 / 삼성전자 2008 옛 공시(EUC-KR) 글자 정상
+- 토큰 교체 후: v1 주소 404 · 헤더 없음 404 · `x-api-key` v2 → 200, 도구 8개
+- claude.ai 웹 채팅 "OpenDART 전자공시 커넥터로 교촌에프앤비 2025년 매출액과 영업이익" → 재무제표 조회 호출(한 번만 허용), 연결 매출 5,173.5억·영업이익 350.4억 — 로컬 시험값과 같음
+- 채팅 입력창 "파일, 커넥터 등 추가 → 커넥터" 목록에 OpenDART 전자공시가 켜진 채로 보임
