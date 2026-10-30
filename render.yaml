@@ -1,0 +1,16 @@
+# Render Blueprint — "Deploy to Render" 링크로 한 번에 만든다.
+# DART_API_KEY 는 sync: false 라 Render 화면에서 사용자가 직접 붙여넣는다 (저장소에는 값이 없다).
+services:
+  - type: web
+    name: opendart-mcp
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm ci && npm run build
+    startCommand: node dist/index.js http
+    healthCheckPath: /healthz
+    envVars:
+      - key: DART_API_KEY
+        sync: false
+      - key: NODE_VERSION
+        value: "22"

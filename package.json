@@ -1,0 +1,21 @@
+{
+  "name": "opendart-mcp-server",
+  "version": "1.0.0",
+  "description": "금융감독원 OpenDART 전자공시 MCP 서버",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js http",
+    "start:stdio": "node dist/index.js",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0"
+  }
+}
